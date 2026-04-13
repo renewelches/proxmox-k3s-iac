@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and fill in your actual values
+# DO NOT commit terraform.tfvars to version control
+
+proxmox_api_url      = "https://proxmox.lab.home:8006/api2/json"
+proxmox_api_token    = "terraform@pve!provider=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+proxmox_tls_insecure = false
+proxmox_nodes = {
+  k3s_server = "pve1"
+  k3s_agent1 = "pve2"
+  k3s_agent2 = "pve3"
+}
+static_ips = {
+  k3s_server = "192.168.86.105/24"
+  k3s_agent1 = "192.168.86.205/24"
+  k3s_agent2 = "192.168.86.155/24"
+}
+k3s_template_ids = {
+  pve1 = 110
+  pve2 = 110
+  pve3 = 109
+}
+gateway           = "192.168.86.1"
+ci_ssh_key        = "~/.ssh/id_ed25519.pub"
+# k3s_server_vcpu   = 4
+# k3s_server_memory = 8192
+# k3s_agent_vcpu    = 4
+# k3s_agent_memory  = 8192
+# k3s_disk_size     = 50

@@ -1,0 +1,75 @@
+---
+- name: Prepare all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update and upgrade apt packages
+      ansible.builtin.shell:
+        cmd: apt update && apt upgrade -y
+      register: apt_result
+      changed_when: "'0 upgraded' not in apt_result.stdout"
+
+    - name: Create /etc/rancher/k3s/
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/
+        state: directory
+        mode: "0755"
+
+- name: Deploy k3s server
+  hosts: k3s_server
+  become: yes
+  tasks:
+    - name: Copy k3s server config
+      ansible.builtin.template:
+        src: files/k3s-config/config-server.yaml.j2
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0644"
+
+    - name: Install k3s server
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | sh -s -
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s server to be ready
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 300
+
+    - name: Retrieve k3s node token
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_data
+
+    - name: Set k3s token fact
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_data['content'] | b64decode | trim }}"
+
+    - name: Add token to hostvars for agents
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        k3s_token: "{{ k3s_token }}"
+      loop: "{{ groups['k3s_agents'] }}"
+
+- name: Deploy k3s agents
+  hosts: k3s_agents
+  become: yes
+  tasks:
+    - name: Copy k3s agent config
+      ansible.builtin.template:
+        src: files/k3s-config/config-agent.yaml.j2
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0644"
+
+    - name: Install k3s agent
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | sh -s - agent
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s agent to join cluster
+      ansible.builtin.shell:
+        cmd: systemctl is-active k3s-agent
+      register: k3s_agent_status
+      until: k3s_agent_status.stdout == "active"
+      retries: 10
+      delay: 6
+      changed_when: false
