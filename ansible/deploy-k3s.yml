@@ -73,3 +73,21 @@
       retries: 10
       delay: 6
       changed_when: false
+
+- name: Fetch kubeconfig to localhost
+  hosts: k3s_server
+  become: yes
+  tasks:
+    - name: Fetch kubeconfig
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/config-k3s
+        flat: yes
+
+    - name: Fix server address in kubeconfig
+      ansible.builtin.replace:
+        path: ~/.kube/config-k3s
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: 'https://{{ k3s_server_ip }}:6443'
+      delegate_to: localhost
+      become: no

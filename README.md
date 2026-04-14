@@ -75,6 +75,38 @@ ansible-playbook -i ansible/inventory/<prod|dev/proxmox>/k3s/inventory.ini \
   ansible/deploy-k3s.yml
 ```
 
+### 4. Fetch kubeconfig to localhost
+
+After the cluster is up, retrieve the kubeconfig and point it at the server's real IP:
+
+```yaml
+- name: Fetch kubeconfig to localhost
+  hosts: k3s_server
+  become: yes
+  tasks:
+    - name: Fetch kubeconfig
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/config-k3s
+        flat: yes
+
+    - name: Fix server address in kubeconfig
+      ansible.builtin.replace:
+        path: ~/.kube/config-k3s
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: 'https://{{ k3s_server_ip }}:6443'
+      delegate_to: localhost
+      become: no
+```
+
+The fetch task copies `/etc/rancher/k3s/k3s.yaml` from the server to `~/.kube/config-k3s` on localhost. Because k3s writes `127.0.0.1` as the server address, the replace task rewrites it to the actual server IP so `kubectl` can reach the cluster remotely.
+
+Then export the kubeconfig before using `kubectl`:
+
+```bash
+export KUBECONFIG=~/.kube/config-k3s
+```
+
 ## How the k3s token works
 
 No token is pre-configured. k3s auto-generates one on the server at startup. The Ansible playbook reads it from `/var/lib/rancher/k3s/server/node-token` and injects it into each agent's config before installation — agents join automatically.
