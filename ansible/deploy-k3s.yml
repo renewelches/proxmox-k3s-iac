@@ -29,6 +29,8 @@
       ansible.builtin.shell:
         cmd: curl -sfL https://get.k3s.io | sh -s -
         creates: /usr/local/bin/k3s
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
 
     - name: Wait for k3s server to be ready
       ansible.builtin.wait_for:
@@ -64,6 +66,8 @@
       ansible.builtin.shell:
         cmd: curl -sfL https://get.k3s.io | sh -s - agent
         creates: /usr/local/bin/k3s
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
 
     - name: Wait for k3s agent to join cluster
       ansible.builtin.shell:

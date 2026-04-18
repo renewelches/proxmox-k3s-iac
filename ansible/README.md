@@ -1,16 +1,35 @@
 # Ansible
 
-Deploys k3s on VMs provisioned by Terraform.
+Deploys and upgrades k3s on VMs provisioned by Terraform.
 
-## Playbook
+## Playbooks
 
-`deploy-k3s.yml` — installs k3s on all nodes in three plays:
+### `deploy-k3s.yml`
+
+Installs k3s on all nodes in four plays:
 
 1. **Prepare all nodes** — apt update/upgrade, create `/etc/rancher/k3s/`
 2. **Deploy k3s server** — install k3s server, wait for it to be ready, retrieve the auto-generated token
 3. **Deploy k3s agents** — inject the server token, install k3s agent, verify it joins the cluster
+4. **Fetch kubeconfig** — copies `/etc/rancher/k3s/k3s.yaml` to `~/.kube/config-k3s` on localhost and rewrites the server address from `127.0.0.1` to the actual server IP
 
 No token needs to be pre-configured — k3s generates one automatically and Ansible propagates it to agents.
+
+Pass `k3s_version` to pin a specific release; omit it to install the latest stable:
+
+```bash
+ansible-playbook -i inventory/prod/k3s/inventory.ini deploy-k3s.yml -e "k3s_version=v1.32.3+k3s1"
+```
+
+### `upgrade-k3s.yml`
+
+Upgrades an existing cluster to a specific version. `k3s_version` is required.
+
+**Upgrade order:** server first, then agents one at a time (drain → upgrade → uncordon). Nodes already on the target version are skipped.
+
+```bash
+ansible-playbook -i inventory/prod/k3s/inventory.ini upgrade-k3s.yml -e "k3s_version=v1.32.3+k3s1"
+```
 
 ## Config Templates
 
@@ -42,7 +61,13 @@ ansible/inventory/dev/proxmox/k3s/
 ## Usage
 
 ```bash
-# After terraform apply has generated the inventory:
-ansible-playbook -i ansible/inventory/prod/k3s/inventory.ini ansible/deploy-k3s.yml
-ansible-playbook -i ansible/inventory/dev/proxmox/k3s/inventory.ini ansible/deploy-k3s.yml
+# Deploy (latest stable k3s)
+ansible-playbook -i inventory/prod/k3s/inventory.ini deploy-k3s.yml
+ansible-playbook -i inventory/dev/proxmox/k3s/inventory.ini deploy-k3s.yml
+
+# Deploy (pinned version)
+ansible-playbook -i inventory/prod/k3s/inventory.ini deploy-k3s.yml -e "k3s_version=v1.32.3+k3s1"
+
+# Upgrade existing cluster
+ansible-playbook -i inventory/prod/k3s/inventory.ini upgrade-k3s.yml -e "k3s_version=v1.32.3+k3s1"
 ```

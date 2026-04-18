@@ -1,0 +1,114 @@
+---
+# Upgrades k3s to a specific version across all nodes.
+# Server is upgraded first, then agents one at a time (drain → upgrade → uncordon).
+#
+# Usage:
+#   ansible-playbook -i inventory/prod/k3s/inventory.ini upgrade-k3s.yml \
+#     -e "k3s_version=v1.32.3+k3s1"
+
+- name: Validate upgrade parameters
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Ensure k3s_version is specified
+      ansible.builtin.fail:
+        msg: "k3s_version must be set. Example: -e 'k3s_version=v1.32.3+k3s1'"
+      when: k3s_version is not defined or k3s_version == ""
+
+- name: Upgrade k3s server
+  hosts: k3s_server
+  become: yes
+  tasks:
+    - name: Get current k3s version
+      ansible.builtin.command:
+        cmd: k3s --version
+      register: current_version
+      changed_when: false
+
+    - name: Show version info
+      ansible.builtin.debug:
+        msg: "Current: {{ current_version.stdout_lines[0] }} | Target: {{ k3s_version }}"
+
+    - name: Upgrade k3s server
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | sh -s -
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      when: k3s_version not in current_version.stdout
+
+    - name: Wait for k3s server node-token to be available
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 300
+      when: k3s_version not in current_version.stdout
+
+    - name: Verify server version after upgrade
+      ansible.builtin.command:
+        cmd: k3s --version
+      register: upgraded_version
+      changed_when: false
+
+    - name: Show server version after upgrade
+      ansible.builtin.debug:
+        msg: "Server is now at: {{ upgraded_version.stdout_lines[0] }}"
+
+- name: Upgrade k3s agents
+  hosts: k3s_agents
+  become: yes
+  serial: 1
+  tasks:
+    - name: Get current k3s version
+      ansible.builtin.command:
+        cmd: k3s --version
+      register: current_version
+      changed_when: false
+
+    - name: Show version info
+      ansible.builtin.debug:
+        msg: "Current: {{ current_version.stdout_lines[0] }} | Target: {{ k3s_version }}"
+
+    - name: Drain agent node
+      ansible.builtin.command:
+        cmd: kubectl drain {{ ansible_facts['hostname'] }} --ignore-daemonsets --delete-emptydir-data --force
+      delegate_to: "{{ groups['k3s_server'][0] }}"
+      become: yes
+      when: k3s_version not in current_version.stdout
+
+    - name: Stop k3s-agent service
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: stopped
+      when: k3s_version not in current_version.stdout
+
+    - name: Upgrade k3s agent
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | sh -s - agent
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      when: k3s_version not in current_version.stdout
+
+    - name: Wait for k3s-agent to be active
+      ansible.builtin.shell:
+        cmd: systemctl is-active k3s-agent
+      register: k3s_agent_status
+      until: k3s_agent_status.stdout == "active"
+      retries: 15
+      delay: 6
+      changed_when: false
+
+    - name: Uncordon agent node
+      ansible.builtin.command:
+        cmd: kubectl uncordon {{ ansible_facts['hostname'] }}
+      delegate_to: "{{ groups['k3s_server'][0] }}"
+      become: yes
+      when: k3s_version not in current_version.stdout
+
+    - name: Verify agent version after upgrade
+      ansible.builtin.command:
+        cmd: k3s --version
+      register: upgraded_version
+      changed_when: false
+
+    - name: Show agent version after upgrade
+      ansible.builtin.debug:
+        msg: "{{ ansible_facts['hostname'] }} is now at: {{ upgraded_version.stdout_lines[0] }}"
