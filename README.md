@@ -62,8 +62,10 @@ Key variables to set in `terraform.tfvars`:
 |------------------|----------------------------------------------|
 | `proxmox_api_url`| Proxmox API endpoint                         |
 | `proxmox_nodes`  | Map of role → Proxmox node name              |
-| `static_ips`     | Map of role → CIDR IP (e.g. `192.168.86.105/24`) |
-| `gateway`        | Default gateway for all VMs (e.g. `192.168.86.1`) |
+| `static_ips`     | Map of role → CIDR IP (e.g. `10.0.0.10/24`) |
+| `gateway`        | Default gateway for all VMs (e.g. `10.0.0.1`) |
+| `k3s_bridges`    | Map of role → Proxmox bridge (gmktec `vmbr1`; minis/morfi `vmbr0` trunk) |
+| `k3s_vlan_tags`  | Map of role → VLAN tag for the lab net (only trunked nodes, e.g. `10`) |
 | `ci_user`        | VM user created by cloud-init                |
 | `ci_ssh_key`     | Path to your SSH public key (e.g. `~/.ssh/id_ed25519.pub`) |
 | `k3s_template_ids` | Map of Proxmox node → template VM ID      |

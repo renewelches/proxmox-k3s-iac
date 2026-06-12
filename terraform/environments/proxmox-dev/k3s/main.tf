@@ -35,11 +35,11 @@ module "vm_k3s-server" {
   vcpu   = var.k3s_server_vcpu
   memory = var.k3s_server_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_server
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_server
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 }
 
 module "vm_k3s-agent-1" {
@@ -57,11 +57,11 @@ module "vm_k3s-agent-1" {
   vcpu   = var.k3s_agent_vcpu
   memory = var.k3s_agent_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_agent1
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_agent1
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 }
 
 module "vm_k3s-agent-2" {
@@ -79,9 +79,9 @@ module "vm_k3s-agent-2" {
   vcpu   = var.k3s_agent_vcpu
   memory = var.k3s_agent_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_agent2
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_agent2
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 }

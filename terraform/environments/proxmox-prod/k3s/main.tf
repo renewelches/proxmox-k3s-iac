@@ -38,11 +38,15 @@ module "vm_k3s-server" {
   vcpu   = var.k3s_server_vcpu
   memory = var.k3s_server_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_server
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  # Network bridge + optional VLAN tag (per node, falls back to a flat vmbr0). See variables.tf.
+  vnic_bridge = lookup(var.k3s_bridges, "k3s_server", var.default_bridge)
+  vlan_tag    = lookup(var.k3s_vlan_tags, "k3s_server", null)
+
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_server
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 
   # wait_for_ip_ipv4 = false
   # wait_for_ip_ipv6 = false
@@ -74,15 +78,19 @@ module "vm_k3s-agent-1" {
   vcpu   = var.k3s_agent_vcpu
   memory = var.k3s_agent_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_agent1
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  # Network bridge + optional VLAN tag (per node, falls back to a flat vmbr0). See variables.tf.
+  vnic_bridge = lookup(var.k3s_bridges, "k3s_agent1", var.default_bridge)
+  vlan_tag    = lookup(var.k3s_vlan_tags, "k3s_agent1", null)
+
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_agent1
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 }
 
 module "vm_k3s-agent-2" {
-  #source = "/Users/rene/Documents/Workspace/terraform-bpg-proxmox/modules/vm-clone"
+
   source           = "github.com/trfore/terraform-bpg-proxmox//modules/vm-clone"
   node             = var.proxmox_nodes.k3s_agent2                       # required
   vm_id            = var.k3s_agent2_vm_id                               # required
@@ -98,9 +106,13 @@ module "vm_k3s-agent-2" {
   vcpu   = var.k3s_agent_vcpu
   memory = var.k3s_agent_memory
 
-  ci_datastore_id  = var.file-system
-  ci_ipv4_cidr     = var.static_ips.k3s_agent2
-  ci_ipv4_gateway  = var.gateway
-  ci_user          = var.ci_user
-  ci_ssh_key       = var.ci_ssh_key
+  # Network bridge + optional VLAN tag (per node, falls back to a flat vmbr0). See variables.tf.
+  vnic_bridge = lookup(var.k3s_bridges, "k3s_agent2", var.default_bridge)
+  vlan_tag    = lookup(var.k3s_vlan_tags, "k3s_agent2", null)
+
+  ci_datastore_id = var.file-system
+  ci_ipv4_cidr    = var.static_ips.k3s_agent2
+  ci_ipv4_gateway = var.gateway
+  ci_user         = var.ci_user
+  ci_ssh_key      = var.ci_ssh_key
 }

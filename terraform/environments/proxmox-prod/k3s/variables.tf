@@ -108,9 +108,27 @@ variable "ci_user" {
 }
 
 variable "gateway" {
-  description = "Default gateway IP for all k3s VMs"
+  description = "Default gateway IP for all k3s VMs (OPNsense LAN on the lab network)"
   type        = string
-  default     = "192.168.86.1"
+  default     = "10.0.0.1"
+}
+
+variable "default_bridge" {
+  description = "Proxmox bridge used for any node not listed in k3s_bridges. Most setups use the default vmbr0."
+  type        = string
+  default     = "vmbr0"
+}
+
+variable "k3s_bridges" {
+  description = "Optional Proxmox bridge override per node (keys: k3s_server, k3s_agent1, k3s_agent2). Omit a node to use default_bridge. Set this only if nodes live on different bridges (e.g. a dedicated lab bridge)."
+  type        = map(string)
+  default     = {}
+}
+
+variable "k3s_vlan_tags" {
+  description = "Optional VLAN tag per node (keys: k3s_server, k3s_agent1, k3s_agent2). Omit a node for an untagged/access port; leave empty for a flat (non-VLAN) network."
+  type        = map(number)
+  default     = {}
 }
 
 variable "ci_ssh_key" {

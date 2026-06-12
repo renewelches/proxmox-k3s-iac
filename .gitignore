@@ -39,5 +39,8 @@ ansible/inventory/**/inventory.ini
 # TLS private keys (never commit)
 ansible/files/**/*.key
 
+.confkoffer.yaml
+.envrc
+
 # OS
 .DS_Store

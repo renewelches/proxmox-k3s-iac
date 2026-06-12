@@ -26,3 +26,23 @@ ci_ssh_key        = "~/.ssh/id_ed25519.pub"
 # k3s_agent_vcpu    = 4
 # k3s_agent_memory  = 8192
 # k3s_disk_size     = 50
+
+# --- Networking (optional) ---------------------------------------------------
+# By default every node attaches to a single flat bridge (default_bridge = "vmbr0")
+# with no VLAN tag, so the values above are all you need for a flat network.
+#
+# Override only if you segment the cluster onto a VLAN / different bridges:
+#   - k3s_bridges:   per-node bridge; omit a node to fall back to default_bridge.
+#   - k3s_vlan_tags: per-node VLAN tag; omit a node for an untagged/access port.
+#
+# Example — server on an untagged access bridge, agents on a VLAN-aware trunk:
+# default_bridge = "vmbr0"
+# k3s_bridges = {
+#   k3s_server = "vmbr1"   # untagged access bridge -> no tag below
+#   k3s_agent1 = "vmbr0"   # trunk
+#   k3s_agent2 = "vmbr0"   # trunk
+# }
+# k3s_vlan_tags = {
+#   k3s_agent1 = 10
+#   k3s_agent2 = 10
+# }
