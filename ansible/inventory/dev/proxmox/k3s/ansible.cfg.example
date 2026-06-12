@@ -1,0 +1,4 @@
+[ssh_connection]
+# Site-specific SSH options. Copy this file to ansible.cfg and adjust for your setup.
+# Add `-o ProxyJump=root@<bastion>` here if the VMs are reachable only via a jump host.
+ssh_args = -o StrictHostKeyChecking=no

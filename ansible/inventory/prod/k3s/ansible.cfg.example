@@ -1,0 +1,5 @@
+[ssh_connection]
+# Site-specific SSH options. Copy this file to ansible.cfg and adjust for your setup.
+# ProxyJump routes the connection through a bastion (e.g. the Proxmox host) when the
+# k3s VMs are not directly reachable from your workstation.
+ssh_args = -o StrictHostKeyChecking=accept-new -o ProxyJump=root@proxmox.example.home

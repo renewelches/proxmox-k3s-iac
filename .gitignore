@@ -36,6 +36,9 @@ terraform.log
 # Ansible generated inventory
 ansible/inventory/**/inventory.ini
 
+# Ansible connection config (site-specific, e.g. ProxyJump bastion). Copy from ansible.cfg.example.
+ansible/inventory/**/ansible.cfg
+
 # TLS private keys (never commit)
 ansible/files/**/*.key
 

@@ -72,6 +72,14 @@ Key variables to set in `terraform.tfvars`:
 
 ### 3. Deploy k3s with Ansible
 
+> **Note:** `ansible.cfg` is gitignored because it holds site-specific SSH options (e.g. a `ProxyJump` bastion) and is **not** included in the repo. Copy the template before running any playbook:
+>
+> ```bash
+> cp ansible/inventory/<prod|dev/proxmox>/k3s/ansible.cfg.example \
+>    ansible/inventory/<prod|dev/proxmox>/k3s/ansible.cfg
+> # then edit ansible.cfg to match your network (ProxyJump host, etc.)
+> ```
+
 ```bash
 ANSIBLE_CONFIG=ansible/inventory/<prod|dev/proxmox>/k3s/ansible.cfg \
 ansible-playbook -i ansible/inventory/<prod|dev/proxmox>/k3s/inventory.ini \
