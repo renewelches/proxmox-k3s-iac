@@ -36,6 +36,9 @@ terraform.log
 # Ansible generated inventory
 ansible/inventory/**/inventory.ini
 
+# Ansible env-specific group_vars (keep the .example, ignore real values)
+ansible/inventory/**/group_vars/*.yml
+
 # Ansible connection config (site-specific, e.g. ProxyJump bastion). Copy from ansible.cfg.example.
 ansible/inventory/**/ansible.cfg
 

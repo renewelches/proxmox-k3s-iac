@@ -1,0 +1,21 @@
+# MetalLB L2 configuration. Rendered by deploy-metallb.yml.
+# Pool addresses come from the `metallb_pool_addresses` variable.
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: {{ metallb_pool_name | default('default-pool') }}
+  namespace: metallb-system
+spec:
+  addresses:
+{% for range in metallb_pool_addresses %}
+    - {{ range }}
+{% endfor %}
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: {{ metallb_pool_name | default('default-pool') }}-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - {{ metallb_pool_name | default('default-pool') }}

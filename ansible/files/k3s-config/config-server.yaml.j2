@@ -1,3 +1,10 @@
 write-kubeconfig-mode: "0644"
 tls-san:
   - "{{ k3s_server_ip }}"
+{% if k3s_disable_servicelb | default(true) %}
+# Disable the bundled ServiceLB (Klipper) so an external LoadBalancer
+# (e.g. MetalLB) owns Service type=LoadBalancer addresses. Set
+# k3s_disable_servicelb=false to keep the built-in ServiceLB instead.
+disable:
+  - servicelb
+{% endif %}

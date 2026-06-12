@@ -1,0 +1,85 @@
+---
+# Installs MetalLB on the k3s cluster and configures an L2 address pool.
+#
+# Prerequisites:
+#   - k3s cluster already deployed (deploy-k3s.yml)
+#   - the bundled k3s ServiceLB (Klipper) is disabled by default so MetalLB
+#     owns Service type=LoadBalancer addresses (toggle: k3s_disable_servicelb)
+#
+# Configuration (set in inventory group_vars/all.yml, see all.yml.example,
+# or pass on the CLI). The address pool is required:
+#   ansible-playbook -i inventory/prod/k3s/inventory.ini deploy-metallb.yml \
+#     -e '{"metallb_pool_addresses": ["192.168.1.240-192.168.1.250"]}'
+
+- name: Validate MetalLB parameters
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Ensure metallb_pool_addresses is set
+      ansible.builtin.assert:
+        that:
+          - metallb_pool_addresses is defined
+          - metallb_pool_addresses | length > 0
+        fail_msg: >-
+          metallb_pool_addresses must be set to a non-empty list of IP ranges or
+          CIDRs for the LoadBalancer pool (e.g. ["192.168.1.240-192.168.1.250"]).
+          Set it in inventory group_vars/all.yml or pass it with -e.
+
+- name: Disable bundled k3s ServiceLB (Klipper)
+  hosts: k3s_server
+  become: true
+  handlers:
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
+  tasks:
+    - name: Render k3s server config (disables servicelb when k3s_disable_servicelb=true)
+      ansible.builtin.template:
+        src: files/k3s-config/config-server.yaml.j2
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0644"
+      notify: Restart k3s
+      when: k3s_disable_servicelb | default(true)
+
+    - name: Restart k3s now so ServiceLB is gone before installing MetalLB
+      ansible.builtin.meta: flush_handlers
+
+- name: Install and configure MetalLB
+  hosts: k3s_server
+  become: true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  tasks:
+    - name: Apply MetalLB native manifest
+      ansible.builtin.command:
+        cmd: >-
+          k3s kubectl apply -f
+          https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version | default('v0.14.9') }}/config/manifests/metallb-native.yaml
+      register: metallb_apply
+      changed_when: "'created' in metallb_apply.stdout or 'configured' in metallb_apply.stdout"
+
+    - name: Wait for the MetalLB controller (its webhook must be up before the pool is applied)
+      ansible.builtin.command:
+        cmd: k3s kubectl -n metallb-system rollout status deploy/controller --timeout=180s
+      changed_when: false
+
+    - name: Wait for the MetalLB speaker DaemonSet
+      ansible.builtin.command:
+        cmd: k3s kubectl -n metallb-system rollout status daemonset/speaker --timeout=180s
+      changed_when: false
+
+    - name: Render the MetalLB address pool + L2 advertisement
+      ansible.builtin.template:
+        src: files/metallb/metallb-pool.yaml.j2
+        dest: /etc/rancher/k3s/metallb-pool.yaml
+        mode: "0644"
+
+    - name: Apply the MetalLB address pool (retry until the webhook accepts it)
+      ansible.builtin.command:
+        cmd: k3s kubectl apply -f /etc/rancher/k3s/metallb-pool.yaml
+      register: pool_apply
+      changed_when: "'created' in pool_apply.stdout or 'configured' in pool_apply.stdout"
+      retries: 6
+      delay: 10
+      until: pool_apply.rc == 0
