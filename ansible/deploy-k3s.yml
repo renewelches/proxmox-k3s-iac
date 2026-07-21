@@ -15,6 +15,31 @@
         state: directory
         mode: "0755"
 
+    # Optional private registry (e.g. GCP Artifact Registry). Written before
+    # k3s installs so containerd picks it up on first start; if k3s is already
+    # running, the handler restarts it. See all.yml.example.
+    - name: Check if k3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Configure private registry
+      ansible.builtin.template:
+        src: files/k3s-config/registries.yaml.j2
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: "0600"
+      when: k3s_registry_host is defined
+      notify: Restart k3s
+
+  handlers:
+    # Fresh installs pick registries.yaml up on first start, so only restart when
+    # k3s is already running.
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: "{{ 'k3s' if 'k3s_server' in group_names else 'k3s-agent' }}"
+        state: restarted
+      when: k3s_binary.stat.exists
+
 - name: Deploy k3s server
   hosts: k3s_server
   become: yes

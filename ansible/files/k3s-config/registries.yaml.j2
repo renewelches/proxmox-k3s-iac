@@ -1,0 +1,13 @@
+# k3s private registry config -> /etc/rancher/k3s/registries.yaml
+# Rendered on every node (server + agents); containerd uses it to authenticate
+# image pulls. Only rendered when k3s_registry_host is defined.
+#
+# GCP Artifact Registry auth: username "_json_key_base64", password is the
+# base64-encoded service-account key.json. The key file lives outside this repo
+# (k3s_registry_key_file) and is embedded at render time, so no secret is
+# committed. See all.yml.example.
+configs:
+  "{{ k3s_registry_host }}":
+    auth:
+      username: "{{ k3s_registry_username | default('_json_key_base64') }}"
+      password: "{{ lookup('file', k3s_registry_key_file) | b64encode }}"
