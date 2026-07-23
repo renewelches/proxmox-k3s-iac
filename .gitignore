@@ -42,8 +42,9 @@ ansible/inventory/**/group_vars/*.yml
 # Ansible connection config (site-specific, e.g. ProxyJump bastion). Copy from ansible.cfg.example.
 ansible/inventory/**/ansible.cfg
 
-# TLS private keys (never commit)
+# TLS private keys / service-account credentials (never commit)
 ansible/files/**/*.key
+ansible/files/**/*.json
 
 .confkoffer.yaml
 .envrc
